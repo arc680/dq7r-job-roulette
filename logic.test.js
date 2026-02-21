@@ -278,8 +278,21 @@ describe('shouldExclude', () => {
 describe('getAvailableJobs', () => {
   const hero = { name: '主人公', uniqueJob: 'ひよっこ漁師' };
 
+  it('初回（履歴なし） → 固有職は含まれない', () => {
+    const jobs = getAvailableJobs(hero, { masteredJobs: {}, historyLength: 0 });
+    const names = jobs.map(j => j.name);
+    expect(names).not.toContain('ひよっこ漁師');
+    expect(jobs.every(j => j.category !== 'unique')).toBe(true);
+  });
+
+  it('2回目以降 → 固有職が含まれる', () => {
+    const jobs = getAvailableJobs(hero, { masteredJobs: {}, historyLength: 1 });
+    const names = jobs.map(j => j.name);
+    expect(names).toContain('ひよっこ漁師');
+  });
+
   it('マスターなし → 基本職+固有職のみ（上級職なし）', () => {
-    const jobs = getAvailableJobs(hero, { masteredJobs: {} });
+    const jobs = getAvailableJobs(hero, { masteredJobs: {}, historyLength: 1 });
     const categories = [...new Set(jobs.map(j => j.category))];
     expect(categories).toContain('unique');
     expect(categories).toContain('basic');
@@ -289,7 +302,7 @@ describe('getAvailableJobs', () => {
 
   it('前提達成 → 上級職が候補に入る', () => {
     const mastered = { '主人公': ['戦士', '武闘家'] };
-    const jobs = getAvailableJobs(hero, { masteredJobs: mastered });
+    const jobs = getAvailableJobs(hero, { masteredJobs: mastered, historyLength: 1 });
     const advancedNames = jobs.filter(j => j.category === 'advanced').map(j => j.name);
     expect(advancedNames).toContain('バトルマスター');
     expect(advancedNames).not.toContain('賢者'); // 魔法使い+僧侶が未マスター
@@ -300,6 +313,7 @@ describe('getAvailableJobs', () => {
       masteredJobs: {},
       excludePrev: true,
       prevJobs: ['戦士', '僧侶'],
+      historyLength: 1,
     });
     const names = jobs.map(j => j.name);
     expect(names).not.toContain('戦士');
@@ -312,6 +326,7 @@ describe('getAvailableJobs', () => {
     const jobs = getAvailableJobs(hero, {
       masteredJobs: mastered,
       excludeMastered: true,
+      historyLength: 1,
     });
     const names = jobs.map(j => j.name);
     expect(names).not.toContain('戦士');
@@ -323,6 +338,7 @@ describe('getAvailableJobs', () => {
       masteredJobs: {},
       excludePrev: true,
       prevJobs: ['ひよっこ漁師'],
+      historyLength: 1,
     });
     const names = jobs.map(j => j.name);
     expect(names).not.toContain('ひよっこ漁師');

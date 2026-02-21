@@ -187,6 +187,7 @@ export function shouldExclude(jobName, prevJobs, masteredJobs, excludePrev, excl
  * @param {boolean} options.excludePrev - 直前の職を除外するか
  * @param {boolean} options.excludeMastered - マスター済みを除外するか
  * @param {string[]} options.prevJobs - 直前の職業名一覧
+ * @param {number} options.historyLength - 現在の履歴件数（0なら初回）
  * @returns {Array<{name: string, category: string}>}
  */
 export function getAvailableJobs(character, options) {
@@ -195,13 +196,15 @@ export function getAvailableJobs(character, options) {
     excludePrev = false,
     excludeMastered = false,
     prevJobs = [],
+    historyLength = 0,
   } = options;
 
   const charMastered = masteredJobs[character.name] || [];
   let jobs = [];
 
-  // 固有職
-  if (!shouldExclude(character.uniqueJob, prevJobs, charMastered, excludePrev, excludeMastered)) {
+  // 固有職（初回は除外）
+  if (historyLength > 0 &&
+    !shouldExclude(character.uniqueJob, prevJobs, charMastered, excludePrev, excludeMastered)) {
     jobs.push({ name: character.uniqueJob, category: 'unique' });
   }
 
