@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DQ7 リイマジンド 職業ルーレット</title>
+  <meta name="description" content="ドラゴンクエスト7 リイマジンドの各キャラクターの職業をランダムに決定するルーレットアプリ">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-ornament top"></div>
+      <h1 class="app-title">
+        <span class="title-sub">DQ7 リイマジンド</span>
+        <span class="title-main">職業ルーレット</span>
+      </h1>
+      <div class="header-ornament bottom"></div>
+    </header>
+
+    <!-- Phase Selector -->
+    <section class="phase-section">
+      <h2 class="section-title">ストーリーフェーズ</h2>
+      <div class="phase-tabs" id="phaseTabs">
+        <button class="phase-tab active" data-phase="1">
+          <span class="phase-number">I</span>
+          <span class="phase-label">転職解放</span>
+          <span class="phase-detail">3人 / 掛け持ちなし</span>
+        </button>
+        <button class="phase-tab" data-phase="2">
+          <span class="phase-number">II</span>
+          <span class="phase-label">アイラ加入</span>
+          <span class="phase-detail">4人 / 掛け持ちあり</span>
+        </button>
+        <button class="phase-tab" data-phase="3">
+          <span class="phase-number">III</span>
+          <span class="phase-label">メルビン加入</span>
+          <span class="phase-detail">5人 / 掛け持ちあり</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Exclusion Options -->
+    <section class="options-section">
+      <h2 class="section-title">オプション</h2>
+      <div class="options-list">
+        <label class="option-toggle" id="optExcludePrev">
+          <input type="checkbox" id="excludePrevCheck" checked>
+          <span class="toggle-switch"></span>
+          <span class="option-label">直前の職を除外する</span>
+        </label>
+        <label class="option-toggle" id="optExcludeMastered">
+          <input type="checkbox" id="excludeMasteredCheck">
+          <span class="toggle-switch"></span>
+          <span class="option-label">マスター済みの職を除外する</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Character Cards -->
+    <section class="characters-section">
+      <div class="characters-grid" id="charactersGrid">
+        <!-- Dynamically populated -->
+      </div>
+    </section>
+
+    <!-- Timing Input -->
+    <section class="timing-section">
+      <h2 class="section-title">転職タイミング</h2>
+      <div class="timing-input-wrapper">
+        <input type="text" class="timing-input" id="timingInput" placeholder="例：ダーマ神殿到着後、グリンフレーク攻略後…">
+      </div>
+    </section>
+
+    <!-- Roulette Button -->
+    <section class="roulette-section">
+      <button class="roulette-btn" id="rouletteBtn">
+        <span class="btn-icon">🎰</span>
+        <span class="btn-text">ルーレットを回す</span>
+      </button>
+    </section>
+
+    <!-- History Section -->
+    <section class="history-section">
+      <div class="history-header">
+        <h2 class="section-title">履歴</h2>
+        <button class="clear-btn" id="clearHistoryBtn">
+          <span>🗑️</span> 全クリア
+        </button>
+      </div>
+      <div class="history-list" id="historyList">
+        <p class="history-empty" id="historyEmpty">まだ履歴がありません</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
