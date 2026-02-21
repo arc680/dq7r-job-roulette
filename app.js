@@ -102,7 +102,7 @@ async function startRoulette() {
 
   for (const char of chars) {
     const prevJobs = excludePrev ? getPreviousJobs(char.name, history) : [];
-    const pool = getAvailableJobs(char, { masteredJobs, excludePrev, excludeMastered, prevJobs });
+    const pool = getAvailableJobs(char, { masteredJobs, excludePrev, excludeMastered, prevJobs, historyLength: history.length });
     if (pool.length === 0) continue;
 
     const card = document.querySelector(`.character-card[data-character="${char.name}"]`);
