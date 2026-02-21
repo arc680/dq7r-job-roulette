@@ -873,3 +873,41 @@ body {
   border-color: var(--text-secondary);
   color: var(--text-primary);
 }
+
+/* ── Per-Character Spin Button ─────────────── */
+
+.char-spin-btn {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-blue);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.char-spin-btn:hover {
+  border-color: var(--border-gold);
+  color: var(--text-gold);
+}
+
+.char-spin-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Confirm Button (disabled state) ─────── */
+
+.roulette-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}

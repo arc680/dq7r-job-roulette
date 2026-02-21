@@ -14,6 +14,7 @@ const STORAGE_KEY = 'dq7r-job-history';
 
 let currentPhase = 1;
 let isRolling = false;
+let pendingAssignments = new Map(); // characterName → assignment object
 
 // ── Init ──────────────────────────────────────
 
@@ -32,6 +33,7 @@ function initPhaseTabs() {
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       if (isRolling) return;
+      pendingAssignments.clear();
       currentPhase = parseInt(tab.dataset.phase);
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
@@ -43,7 +45,7 @@ function initPhaseTabs() {
 // ── Options ───────────────────────────────────
 
 function initOptions() {
-  document.getElementById('rouletteBtn').addEventListener('click', startRoulette);
+  document.getElementById('rouletteBtn').addEventListener('click', confirmSession);
   document.getElementById('clearHistoryBtn').addEventListener('click', confirmClearHistory);
 }
 
@@ -67,6 +69,7 @@ function renderCharacters() {
       <div class="card-header">
         <div class="card-avatar">${char.emoji}</div>
         <div class="card-name">${char.name}</div>
+        <button class="char-spin-btn" data-character="${char.name}" title="${char.name}のみスピン">🎲</button>
       </div>
       <div class="job-slots">
         <div class="job-slot" data-slot="1">
@@ -81,49 +84,69 @@ function renderCharacters() {
       </div>
     </div>
   `).join('');
+
+  initCharSpinButtons();
+  updateConfirmButton();
 }
 
-// ── Roulette ──────────────────────────────────
+// ── Character Spin Buttons ────────────────────
 
-async function startRoulette() {
+function initCharSpinButtons() {
+  const chars = getCharactersForPhase(currentPhase);
+  document.querySelectorAll('.char-spin-btn').forEach(btn => {
+    const char = chars.find(c => c.name === btn.dataset.character);
+    if (char) btn.addEventListener('click', () => startCharacterRoulette(char));
+  });
+}
+
+// ── Per-Character Roulette ────────────────────
+
+async function startCharacterRoulette(char) {
   if (isRolling) return;
 
-  const chars = getCharactersForPhase(currentPhase);
   const isDual = PHASES[currentPhase].dualJob;
   const history = loadHistory();
   const masteredJobs = computeMasteredJobs(history);
   const excludePrev = isExcludePrevEnabled();
   const excludeMastered = isExcludeMasteredEnabled();
+  const prevJobs = excludePrev ? getPreviousJobs(char.name, history) : [];
+  const pool = getAvailableJobs(char, {
+    masteredJobs, excludePrev, excludeMastered, prevJobs, historyLength: history.length,
+  });
+  if (pool.length === 0) return;
 
   isRolling = true;
-  document.getElementById('rouletteBtn').disabled = true;
+  setSpinButtonsDisabled(true);
 
-  const assignments = [];
+  const card = document.querySelector(`.character-card[data-character="${char.name}"]`);
+  card.classList.remove('decided');
+  card.classList.add('rolling');
+  const slots = card.querySelectorAll('.job-slot');
 
-  for (const char of chars) {
-    const prevJobs = excludePrev ? getPreviousJobs(char.name, history) : [];
-    const pool = getAvailableJobs(char, { masteredJobs, excludePrev, excludeMastered, prevJobs, historyLength: history.length });
-    if (pool.length === 0) continue;
+  const job1 = await animateSlot(slots[0], pool);
+  const charAssignment = { character: char.name, jobs: [{ ...job1, mastered: false }] };
 
-    const card = document.querySelector(`.character-card[data-character="${char.name}"]`);
-    card.classList.add('rolling');
-    const slots = card.querySelectorAll('.job-slot');
-
-    const job1 = await animateSlot(slots[0], pool);
-    const charAssignment = { character: char.name, jobs: [{ ...job1, mastered: false }] };
-
-    if (isDual && slots[1]) {
-      const job2 = await animateSlot(slots[1], pool, [job1.name]);
-      charAssignment.jobs.push({ ...job2, mastered: false });
-    }
-
-    card.classList.remove('rolling');
-    card.classList.add('decided');
-    assignments.push(charAssignment);
+  if (isDual && slots[1]) {
+    const job2 = await animateSlot(slots[1], pool, [job1.name]);
+    charAssignment.jobs.push({ ...job2, mastered: false });
   }
 
-  const timingInput = document.getElementById('timingInput');
-  const timing = timingInput.value.trim();
+  card.classList.remove('rolling');
+  card.classList.add('decided');
+  pendingAssignments.set(char.name, charAssignment);
+
+  isRolling = false;
+  setSpinButtonsDisabled(false);
+  updateConfirmButton();
+}
+
+// ── Confirm Session ───────────────────────────
+
+function confirmSession() {
+  if (pendingAssignments.size === 0) return;
+
+  const assignments = Array.from(pendingAssignments.values());
+  const timing = document.getElementById('timingInput').value.trim();
   saveHistory({
     timestamp: Date.now(),
     phase: currentPhase,
@@ -132,13 +155,22 @@ async function startRoulette() {
     assignments,
   });
 
-  isRolling = false;
-  document.getElementById('rouletteBtn').disabled = false;
-
-  setTimeout(() => {
-    document.querySelectorAll('.character-card.decided').forEach(c => c.classList.remove('decided'));
-  }, 2000);
+  pendingAssignments.clear();
+  document.querySelectorAll('.character-card.decided').forEach(c => c.classList.remove('decided'));
+  updateConfirmButton();
 }
+
+// ── Button State Helpers ──────────────────────
+
+function updateConfirmButton() {
+  document.getElementById('rouletteBtn').disabled = pendingAssignments.size === 0;
+}
+
+function setSpinButtonsDisabled(disabled) {
+  document.querySelectorAll('.char-spin-btn').forEach(btn => btn.disabled = disabled);
+}
+
+// ── Animation ─────────────────────────────────
 
 async function animateSlot(slotEl, pool, exclude = []) {
   slotEl.classList.add('rolling');

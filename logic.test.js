@@ -419,3 +419,22 @@ describe('データ整合性', () => {
     });
   });
 });
+
+// ── getPreviousJobs - 部分的なキャラのみを含む履歴エントリ ────────
+
+describe('getPreviousJobs - 部分的なキャラのみを含む履歴エントリ', () => {
+  it('最新エントリに対象キャラがいない場合は空配列を返す', () => {
+    const history = [
+      { assignments: [{ character: 'マリベル', jobs: [{ name: '踊り子', category: 'basic', mastered: false }] }] },
+      { assignments: [{ character: '主人公', jobs: [{ name: '戦士', category: 'basic', mastered: false }] }] },
+    ];
+    expect(getPreviousJobs('主人公', history)).toEqual([]);
+  });
+
+  it('最新エントリに対象キャラがいれば正しく返す（部分エントリ）', () => {
+    const history = [
+      { assignments: [{ character: '主人公', jobs: [{ name: '戦士', category: 'basic', mastered: false }] }] },
+    ];
+    expect(getPreviousJobs('主人公', history)).toEqual(['戦士']);
+  });
+});
