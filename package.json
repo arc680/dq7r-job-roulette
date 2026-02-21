@@ -1,0 +1,13 @@
+{
+  "name": "dq7r-job-roulette",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DQ7 リイマジンド 職業ルーレット",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  }
+}
