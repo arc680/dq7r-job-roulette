@@ -1,56 +1,12 @@
 /* ============================================
-   DQ7 リイマジンド 職業ルーレット - App Logic
+   DQ7 リイマジンド 職業ルーレット - UI Layer
    ============================================ */
 
-// ── Data ──────────────────────────────────────
-
-const CHARACTERS = [
-  { name: '主人公', emoji: '⚓', uniqueJob: 'ひよっこ漁師', phases: [1, 2, 3] },
-  { name: 'マリベル', emoji: '🎀', uniqueJob: 'ひよっこ網元', phases: [1, 2, 3] },
-  { name: 'ガボ', emoji: '🐺', uniqueJob: 'オオカミ少年', phases: [1, 2, 3] },
-  { name: 'アイラ', emoji: '💃', uniqueJob: 'ユバールの踊り手', phases: [2, 3] },
-  { name: 'メルビン', emoji: '🛡️', uniqueJob: '神の兵士', phases: [3] },
-];
-
-const JOBS = {
-  unique: [], // populated per-character
-  basic: [
-    '戦士', '武闘家', '魔法使い', '僧侶', '踊り子',
-    '盗賊', '吟遊詩人', '船乗り', '羊飼い', '笑わせ師'
-  ],
-  advanced: [
-    'バトルマスター', '魔法戦士', '賢者', 'パラディン',
-    'スーパースター', 'まもの使い', '海賊'
-  ],
-  master: ['ゴッドハンド', '天地雷鳴士', '勇者']
-};
-
-// 上級職・マスター職の前提条件
-const JOB_PREREQUISITES = {
-  'バトルマスター': { type: 'all', requires: ['戦士', '武闘家'] },
-  '魔法戦士': { type: 'all', requires: ['戦士', '魔法使い'] },
-  '賢者': { type: 'all', requires: ['魔法使い', '僧侶'] },
-  'パラディン': { type: 'all', requires: ['武闘家', '僧侶'] },
-  'スーパースター': { type: 'all', requires: ['踊り子', '吟遊詩人', '笑わせ師'] },
-  'まもの使い': { type: 'all', requires: ['盗賊', '羊飼い'] },
-  '海賊': { type: 'all', requires: ['盗賊', '船乗り'] },
-  'ゴッドハンド': { type: 'all', requires: ['バトルマスター', 'パラディン'] },
-  '天地雷鳴士': { type: 'count', requires: ['賢者', 'スーパースター', '海賊'], count: 2 },
-  '勇者': { type: 'advancedCount', count: 3 },
-};
-
-const PHASES = {
-  1: { label: '転職解放', dualJob: false },
-  2: { label: 'アイラ加入', dualJob: true },
-  3: { label: 'メルビン加入', dualJob: true },
-};
-
-const CATEGORY_LABELS = {
-  unique: '固有職',
-  basic: '基本職',
-  advanced: '上級職',
-  master: 'マスター職',
-};
+import {
+  CHARACTERS, JOBS, PHASES, CATEGORY_LABELS,
+  getCharactersForPhase, computeMasteredJobs, toggleMasteredInHistory,
+  getPreviousJobs, getAvailableJobs, pickRandomJob, formatTime,
+} from './logic.js';
 
 const STORAGE_KEY = 'dq7r-job-history';
 
@@ -103,7 +59,7 @@ function isExcludeMasteredEnabled() {
 
 function renderCharacters() {
   const grid = document.getElementById('charactersGrid');
-  const chars = CHARACTERS.filter(c => c.phases.includes(currentPhase));
+  const chars = getCharactersForPhase(currentPhase);
   const isDual = PHASES[currentPhase].dualJob;
 
   grid.innerHTML = chars.map(char => `
@@ -127,154 +83,17 @@ function renderCharacters() {
   `).join('');
 }
 
-// ── Mastered Jobs (derived from history) ──────
-
-function computeMasteredJobs() {
-  const history = loadHistory();
-  const mastered = {};
-
-  history.forEach(entry => {
-    if (!entry.assignments) return;
-    entry.assignments.forEach(a => {
-      a.jobs.forEach(j => {
-        const jobName = typeof j === 'string' ? j : j.name;
-        const isMastered = typeof j === 'object' && j.mastered === true;
-        if (isMastered) {
-          if (!mastered[a.character]) mastered[a.character] = [];
-          if (!mastered[a.character].includes(jobName)) {
-            mastered[a.character].push(jobName);
-          }
-        }
-      });
-    });
-  });
-
-  return mastered;
-}
-
-function toggleMastered(historyIndex, characterName, jobName) {
-  const history = loadHistory();
-  const entry = history[historyIndex];
-  if (!entry) return;
-
-  const assignment = entry.assignments.find(a => a.character === characterName);
-  if (!assignment) return;
-
-  const job = assignment.jobs.find(j => {
-    const name = typeof j === 'string' ? j : j.name;
-    return name === jobName;
-  });
-  if (!job) return;
-
-  if (typeof job === 'string') {
-    const idx = assignment.jobs.indexOf(job);
-    assignment.jobs[idx] = { name: job, category: 'basic', mastered: true };
-  } else {
-    job.mastered = !job.mastered;
-  }
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-  renderHistory();
-}
-
-// ── Previous Jobs (from most recent history) ──
-
-function getPreviousJobs(characterName) {
-  const history = loadHistory();
-  if (history.length === 0) return [];
-
-  const latest = history[0];
-  if (!latest.assignments) return [];
-
-  const assignment = latest.assignments.find(a => a.character === characterName);
-  if (!assignment) return [];
-
-  return assignment.jobs.map(j => typeof j === 'string' ? j : j.name);
-}
-
-// ── Job Prerequisites ─────────────────────────
-
-function checkPrerequisites(characterName, jobName) {
-  const prereq = JOB_PREREQUISITES[jobName];
-  if (!prereq) return true;
-
-  const mastered = computeMasteredJobs();
-  const charMastered = mastered[characterName] || [];
-
-  switch (prereq.type) {
-    case 'all':
-      return prereq.requires.every(req => charMastered.includes(req));
-    case 'count':
-      return prereq.requires.filter(req => charMastered.includes(req)).length >= prereq.count;
-    case 'advancedCount':
-      return JOBS.advanced.filter(j => charMastered.includes(j)).length >= prereq.count;
-    default:
-      return true;
-  }
-}
-
-// ── Job Pool ──────────────────────────────────
-
-function getAvailableJobs(character) {
-  const mastered = computeMasteredJobs();
-  const charMastered = mastered[character.name] || [];
-  const excludePrev = isExcludePrevEnabled();
-  const excludeMastered = isExcludeMasteredEnabled();
-  const prevJobs = excludePrev ? getPreviousJobs(character.name) : [];
-
-  let jobs = [];
-
-  // 固有職
-  const uniqueJob = character.uniqueJob;
-  if (!shouldExclude(uniqueJob, prevJobs, charMastered, excludePrev, excludeMastered)) {
-    jobs.push({ name: uniqueJob, category: 'unique' });
-  }
-
-  // 基本職
-  JOBS.basic.forEach(j => {
-    if (!shouldExclude(j, prevJobs, charMastered, excludePrev, excludeMastered)) {
-      jobs.push({ name: j, category: 'basic' });
-    }
-  });
-
-  // 上級職（前提条件チェック付き）
-  JOBS.advanced.forEach(j => {
-    if (checkPrerequisites(character.name, j) &&
-      !shouldExclude(j, prevJobs, charMastered, excludePrev, excludeMastered)) {
-      jobs.push({ name: j, category: 'advanced' });
-    }
-  });
-
-  // マスター職（前提条件チェック付き）
-  JOBS.master.forEach(j => {
-    if (checkPrerequisites(character.name, j) &&
-      !shouldExclude(j, prevJobs, charMastered, excludePrev, excludeMastered)) {
-      jobs.push({ name: j, category: 'master' });
-    }
-  });
-
-  return jobs;
-}
-
-function shouldExclude(jobName, prevJobs, masteredJobs, excludePrev, excludeMastered) {
-  if (excludePrev && prevJobs.includes(jobName)) return true;
-  if (excludeMastered && masteredJobs.includes(jobName)) return true;
-  return false;
-}
-
-function pickRandomJob(pool, exclude = []) {
-  const filtered = pool.filter(j => !exclude.includes(j.name));
-  if (filtered.length === 0) return pool[Math.floor(Math.random() * pool.length)];
-  return filtered[Math.floor(Math.random() * filtered.length)];
-}
-
 // ── Roulette ──────────────────────────────────
 
 async function startRoulette() {
   if (isRolling) return;
 
-  const chars = CHARACTERS.filter(c => c.phases.includes(currentPhase));
+  const chars = getCharactersForPhase(currentPhase);
   const isDual = PHASES[currentPhase].dualJob;
+  const history = loadHistory();
+  const masteredJobs = computeMasteredJobs(history);
+  const excludePrev = isExcludePrevEnabled();
+  const excludeMastered = isExcludeMasteredEnabled();
 
   isRolling = true;
   document.getElementById('rouletteBtn').disabled = true;
@@ -282,7 +101,8 @@ async function startRoulette() {
   const assignments = [];
 
   for (const char of chars) {
-    const pool = getAvailableJobs(char);
+    const prevJobs = excludePrev ? getPreviousJobs(char.name, history) : [];
+    const pool = getAvailableJobs(char, { masteredJobs, excludePrev, excludeMastered, prevJobs });
     if (pool.length === 0) continue;
 
     const card = document.querySelector(`.character-card[data-character="${char.name}"]`);
@@ -378,6 +198,15 @@ function deleteHistoryItem(index) {
 function clearHistory() {
   localStorage.removeItem(STORAGE_KEY);
   renderHistory();
+}
+
+function handleToggleMastered(historyIndex, characterName, jobName) {
+  const history = loadHistory();
+  const updated = toggleMasteredInHistory(history, historyIndex, characterName, jobName);
+  if (updated) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    renderHistory();
+  }
 }
 
 function confirmClearHistory() {
@@ -483,17 +312,11 @@ function renderHistory() {
 
   list.querySelectorAll('.master-toggle input').forEach(cb => {
     cb.addEventListener('change', () => {
-      toggleMastered(
+      handleToggleMastered(
         parseInt(cb.dataset.historyIndex),
         cb.dataset.character,
         cb.dataset.job
       );
     });
   });
-}
-
-function formatTime(timestamp) {
-  const d = new Date(timestamp);
-  const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
