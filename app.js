@@ -47,6 +47,15 @@ function initPhaseTabs() {
 function initOptions() {
   document.getElementById('rouletteBtn').addEventListener('click', confirmSession);
   document.getElementById('clearHistoryBtn').addEventListener('click', confirmClearHistory);
+  document.getElementById('exportHistoryBtn').addEventListener('click', exportHistory);
+  document.getElementById('importHistoryBtn').addEventListener('click', () => {
+    document.getElementById('importFileInput').click();
+  });
+  document.getElementById('importFileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) importHistory(file);
+    e.target.value = '';
+  });
 }
 
 function isExcludePrevEnabled() {
@@ -269,6 +278,117 @@ function confirmClearHistory() {
   });
 
   document.body.appendChild(overlay);
+}
+
+// ── Export / Import ───────────────────────────
+
+function exportHistory() {
+  const history = loadHistory();
+  if (history.length === 0) return;
+
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    history,
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const date = new Date().toISOString().slice(0, 10);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dq7r-history-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importHistory(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let imported;
+    try {
+      const parsed = JSON.parse(e.target.result);
+      imported = validateImportData(parsed);
+    } catch {
+      showImportMessage('JSONの読み込みに失敗しました。', 'error');
+      return;
+    }
+
+    if (imported.length === 0) {
+      showImportMessage('有効な履歴データが見つかりませんでした。', 'error');
+      return;
+    }
+
+    const existing = loadHistory();
+    if (existing.length > 0) {
+      showImportMergeDialog(existing, imported);
+    } else {
+      applyImport('replace', [], imported);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function validateImportData(parsed) {
+  const arr = Array.isArray(parsed) ? parsed : parsed?.history;
+  if (!Array.isArray(arr)) return [];
+  return arr.filter(entry =>
+    typeof entry.timestamp === 'number' &&
+    typeof entry.phase === 'number' &&
+    Array.isArray(entry.assignments)
+  );
+}
+
+function applyImport(mode, existing, imported) {
+  let merged;
+  if (mode === 'merge') {
+    const map = new Map();
+    [...existing, ...imported].forEach(entry => map.set(entry.timestamp, entry));
+    merged = Array.from(map.values()).sort((a, b) => b.timestamp - a.timestamp);
+  } else {
+    merged = [...imported].sort((a, b) => b.timestamp - a.timestamp);
+  }
+  if (merged.length > 50) merged.length = 50;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+  renderHistory();
+  showImportMessage(`${imported.length}件の履歴をインポートしました。`, 'success');
+}
+
+function showImportMergeDialog(existing, imported) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-dialog">
+      <p>${imported.length}件の履歴をインポートします。<br>既存の${existing.length}件の履歴はどうしますか？</p>
+      <div class="confirm-actions">
+        <button class="confirm-merge">追加する</button>
+        <button class="confirm-replace">置き換える</button>
+        <button class="confirm-no">キャンセル</button>
+      </div>
+    </div>
+  `;
+
+  overlay.querySelector('.confirm-merge').addEventListener('click', () => {
+    applyImport('merge', existing, imported);
+    overlay.remove();
+  });
+  overlay.querySelector('.confirm-replace').addEventListener('click', () => {
+    applyImport('replace', existing, imported);
+    overlay.remove();
+  });
+  overlay.querySelector('.confirm-no').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  document.body.appendChild(overlay);
+}
+
+function showImportMessage(message, type) {
+  const el = document.createElement('div');
+  el.className = `import-message import-message--${type}`;
+  el.textContent = message;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
 }
 
 // ── History Rendering ─────────────────────────
