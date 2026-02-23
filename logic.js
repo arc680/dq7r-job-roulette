@@ -132,13 +132,15 @@ export function toggleMasteredInHistory(history, historyIndex, characterName, jo
 export function getPreviousJobs(characterName, history) {
   if (history.length === 0) return [];
 
-  const latest = history[0];
-  if (!latest.assignments) return [];
+  for (const entry of history) {
+    if (!entry.assignments) continue;
+    const assignment = entry.assignments.find(a => a.character === characterName);
+    if (assignment) {
+      return assignment.jobs.map(j => typeof j === 'string' ? j : j.name);
+    }
+  }
 
-  const assignment = latest.assignments.find(a => a.character === characterName);
-  if (!assignment) return [];
-
-  return assignment.jobs.map(j => typeof j === 'string' ? j : j.name);
+  return [];
 }
 
 // ── Job Prerequisites ─────────────────────────
