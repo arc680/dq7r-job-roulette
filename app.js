@@ -132,11 +132,11 @@ async function startCharacterRoulette(char) {
   card.classList.add('rolling');
   const slots = card.querySelectorAll('.job-slot');
 
-  const job1 = await animateSlot(slots[0], pool);
+  const job1 = await animateSlot(slots[0], pool, prevJobs);
   const charAssignment = { character: char.name, jobs: [{ ...job1, mastered: false }] };
 
   if (isDual && slots[1]) {
-    const job2 = await animateSlot(slots[1], pool, [job1.name]);
+    const job2 = await animateSlot(slots[1], pool, [...prevJobs, job1.name]);
     charAssignment.jobs.push({ ...job2, mastered: false });
   }
 
