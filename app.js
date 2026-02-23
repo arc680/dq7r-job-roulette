@@ -9,6 +9,7 @@ import {
 } from './logic.js';
 
 const STORAGE_KEY = 'dq7r-job-history';
+const PHASE_STORAGE_KEY = 'dq7r-current-phase';
 
 // ── State ─────────────────────────────────────
 
@@ -20,6 +21,16 @@ let pendingAssignments = new Map(); // characterName → assignment object
 
 document.addEventListener('DOMContentLoaded', () => {
   localStorage.removeItem('dq7r-mastered-jobs');
+
+  // Restore saved phase
+  const savedPhase = parseInt(localStorage.getItem(PHASE_STORAGE_KEY));
+  if (savedPhase && [1, 2, 3].includes(savedPhase)) {
+    currentPhase = savedPhase;
+    document.querySelectorAll('.phase-tab').forEach(tab => {
+      tab.classList.toggle('active', parseInt(tab.dataset.phase) === savedPhase);
+    });
+  }
+
   initPhaseTabs();
   initOptions();
   renderCharacters();
@@ -35,6 +46,7 @@ function initPhaseTabs() {
       if (isRolling) return;
       pendingAssignments.clear();
       currentPhase = parseInt(tab.dataset.phase);
+      localStorage.setItem(PHASE_STORAGE_KEY, currentPhase);
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       renderCharacters();
@@ -289,6 +301,7 @@ function exportHistory() {
   const data = {
     version: 1,
     exportedAt: new Date().toISOString(),
+    currentPhase,
     history,
   };
 
@@ -307,8 +320,13 @@ function importHistory(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
     let imported;
+    let importedPhase = null;
     try {
       const parsed = JSON.parse(e.target.result);
+      const rawPhase = parsed?.currentPhase;
+      if (typeof rawPhase === 'number' && [1, 2, 3].includes(rawPhase)) {
+        importedPhase = rawPhase;
+      }
       imported = validateImportData(parsed);
     } catch {
       showImportMessage('JSONの読み込みに失敗しました。', 'error');
@@ -322,9 +340,9 @@ function importHistory(file) {
 
     const existing = loadHistory();
     if (existing.length > 0) {
-      showImportMergeDialog(existing, imported);
+      showImportMergeDialog(existing, imported, importedPhase);
     } else {
-      applyImport('replace', [], imported);
+      applyImport('replace', [], imported, importedPhase);
     }
   };
   reader.readAsText(file);
@@ -340,7 +358,7 @@ function validateImportData(parsed) {
   );
 }
 
-function applyImport(mode, existing, imported) {
+function applyImport(mode, existing, imported, importedPhase = null) {
   let merged;
   if (mode === 'merge') {
     const map = new Map();
@@ -351,11 +369,22 @@ function applyImport(mode, existing, imported) {
   }
   if (merged.length > 50) merged.length = 50;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+
+  if (importedPhase !== null) {
+    currentPhase = importedPhase;
+    localStorage.setItem(PHASE_STORAGE_KEY, importedPhase);
+    document.querySelectorAll('.phase-tab').forEach(tab => {
+      tab.classList.toggle('active', parseInt(tab.dataset.phase) === importedPhase);
+    });
+    pendingAssignments.clear();
+    renderCharacters();
+  }
+
   renderHistory();
   showImportMessage(`${imported.length}件の履歴をインポートしました。`, 'success');
 }
 
-function showImportMergeDialog(existing, imported) {
+function showImportMergeDialog(existing, imported, importedPhase = null) {
   const overlay = document.createElement('div');
   overlay.className = 'confirm-overlay';
   overlay.innerHTML = `
@@ -370,11 +399,11 @@ function showImportMergeDialog(existing, imported) {
   `;
 
   overlay.querySelector('.confirm-merge').addEventListener('click', () => {
-    applyImport('merge', existing, imported);
+    applyImport('merge', existing, imported, importedPhase);
     overlay.remove();
   });
   overlay.querySelector('.confirm-replace').addEventListener('click', () => {
-    applyImport('replace', existing, imported);
+    applyImport('replace', existing, imported, importedPhase);
     overlay.remove();
   });
   overlay.querySelector('.confirm-no').addEventListener('click', () => overlay.remove());
