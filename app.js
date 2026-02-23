@@ -11,6 +11,23 @@ import {
 const STORAGE_KEY = 'dq7r-job-history';
 const PHASE_STORAGE_KEY = 'dq7r-current-phase';
 
+// ── Boss Presets ───────────────────────────────
+// ※ 不要なボスは別途確認して削除する（参照: https://gamewith.jp/dq7/534455）
+
+const BOSS_PRESETS = [
+  { area: 'エンゴウ',         bosses: ['サラマンダー'] },
+  { area: 'ウッドパルナ',     bosses: ['ギャオース'] },
+  { area: 'コスタール',       bosses: ['暗黒皇帝ガナサダイ'] },
+  { area: 'グリンフレーク',   bosses: ['デス将軍'] },
+  { area: 'ライドン',         bosses: ['ビューティーン'] },
+  { area: 'ネオンテ',         bosses: ['ドドンガ'] },
+  { area: 'リートルード',     bosses: ['ジャコラ'] },
+  { area: 'ダーマ神殿',       bosses: ['大神官ラゴス'] },
+  { area: 'オルフィー',       bosses: ['バーバレラ'] },
+  { area: '黄金郷エルシオン', bosses: ['キングモーモン'] },
+  { area: 'ラストダンジョン', bosses: ['オルゴ・デミーラ'] },
+];
+
 // ── State ─────────────────────────────────────
 
 let currentPhase = 1;
@@ -33,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initPhaseTabs();
   initOptions();
+  initBossPresets();
   renderCharacters();
   renderHistory();
 });
@@ -67,6 +85,30 @@ function initOptions() {
     const file = e.target.files[0];
     if (file) importHistory(file);
     e.target.value = '';
+  });
+}
+
+// ── Boss Preset Dropdown ───────────────────────
+
+function initBossPresets() {
+  const select = document.getElementById('timingPreset');
+  BOSS_PRESETS.forEach(({ area, bosses }) => {
+    const group = document.createElement('optgroup');
+    group.label = area;
+    bosses.forEach(boss => {
+      const option = document.createElement('option');
+      option.value = boss;
+      option.textContent = boss;
+      group.appendChild(option);
+    });
+    select.appendChild(group);
+  });
+
+  select.addEventListener('change', () => {
+    if (select.value) {
+      document.getElementById('timingInput').value = `${select.value}撃破`;
+      select.value = '';
+    }
   });
 }
 
