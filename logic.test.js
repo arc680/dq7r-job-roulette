@@ -495,12 +495,12 @@ describe('掛け持ち時の直前職除外', () => {
 // ── getPreviousJobs - 部分的なキャラのみを含む履歴エントリ ────────
 
 describe('getPreviousJobs - 部分的なキャラのみを含む履歴エントリ', () => {
-  it('最新エントリに対象キャラがいない場合は空配列を返す', () => {
+  it('最新エントリに対象キャラがいない場合は過去エントリを遡って返す', () => {
     const history = [
       { assignments: [{ character: 'マリベル', jobs: [{ name: '踊り子', category: 'basic', mastered: false }] }] },
       { assignments: [{ character: '主人公', jobs: [{ name: '戦士', category: 'basic', mastered: false }] }] },
     ];
-    expect(getPreviousJobs('主人公', history)).toEqual([]);
+    expect(getPreviousJobs('主人公', history)).toEqual(['戦士']);
   });
 
   it('最新エントリに対象キャラがいれば正しく返す（部分エントリ）', () => {
@@ -508,5 +508,29 @@ describe('getPreviousJobs - 部分的なキャラのみを含む履歴エント�
       { assignments: [{ character: '主人公', jobs: [{ name: '戦士', category: 'basic', mastered: false }] }] },
     ];
     expect(getPreviousJobs('主人公', history)).toEqual(['戦士']);
+  });
+
+  it('複数エントリを遡って最新の職業を返す', () => {
+    const history = [
+      { assignments: [{ character: 'ガボ', jobs: [{ name: '武闘家', category: 'basic', mastered: false }] }] },
+      { assignments: [{ character: 'マリベル', jobs: [{ name: '踊り子', category: 'basic', mastered: false }] }] },
+      { assignments: [{ character: '主人公', jobs: [{ name: '魔法使い', category: 'basic', mastered: false }] }] },
+    ];
+    expect(getPreviousJobs('主人公', history)).toEqual(['魔法使い']);
+  });
+
+  it('全エントリに対象キャラがいない場合は空配列を返す', () => {
+    const history = [
+      { assignments: [{ character: 'マリベル', jobs: [{ name: '踊り子', category: 'basic', mastered: false }] }] },
+    ];
+    expect(getPreviousJobs('主人公', history)).toEqual([]);
+  });
+
+  it('最新エントリに含まれる場合は過去エントリより優先', () => {
+    const history = [
+      { assignments: [{ character: '主人公', jobs: [{ name: '僧侶', category: 'basic', mastered: false }] }] },
+      { assignments: [{ character: '主人公', jobs: [{ name: '戦士', category: 'basic', mastered: false }] }] },
+    ];
+    expect(getPreviousJobs('主人公', history)).toEqual(['僧侶']);
   });
 });
