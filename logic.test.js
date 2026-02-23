@@ -420,6 +420,78 @@ describe('データ整合性', () => {
   });
 });
 
+// ── 掛け持ち時の直前職除外（メイン・サブ両方） ────────────────────
+
+describe('掛け持ち時の直前職除外', () => {
+  const hero = { name: '主人公', uniqueJob: 'ひよっこ漁師' };
+
+  it('直前のメイン職はプールに含まれない', () => {
+    const history = [{
+      assignments: [{
+        character: '主人公',
+        jobs: [
+          { name: '戦士', category: 'basic', mastered: false },
+          { name: '僧侶', category: 'basic', mastered: false },
+        ]
+      }]
+    }];
+    const prevJobs = getPreviousJobs('主人公', history);
+    const pool = getAvailableJobs(hero, {
+      masteredJobs: {},
+      excludePrev: true,
+      prevJobs,
+      historyLength: 1,
+    });
+    const names = pool.map(j => j.name);
+    expect(names).not.toContain('戦士'); // 直前のメイン職はメイン・サブ両スロットで選択不可
+    expect(names).not.toContain('僧侶'); // 直前のサブ職もメイン・サブ両スロットで選択不可
+  });
+
+  it('直前のサブ職もプールに含まれない', () => {
+    const history = [{
+      assignments: [{
+        character: '主人公',
+        jobs: [
+          { name: '魔法使い', category: 'basic', mastered: false },
+          { name: '踊り子', category: 'basic', mastered: false },
+        ]
+      }]
+    }];
+    const prevJobs = getPreviousJobs('主人公', history);
+    const pool = getAvailableJobs(hero, {
+      masteredJobs: {},
+      excludePrev: true,
+      prevJobs,
+      historyLength: 1,
+    });
+    const names = pool.map(j => j.name);
+    expect(names).not.toContain('魔法使い');
+    expect(names).not.toContain('踊り子');
+  });
+
+  it('プール内のすべての職が直前職でない', () => {
+    const history = [{
+      assignments: [{
+        character: '主人公',
+        jobs: [
+          { name: '戦士', category: 'basic', mastered: false },
+          { name: '僧侶', category: 'basic', mastered: false },
+        ]
+      }]
+    }];
+    const prevJobs = getPreviousJobs('主人公', history);
+    const pool = getAvailableJobs(hero, {
+      masteredJobs: {},
+      excludePrev: true,
+      prevJobs,
+      historyLength: 1,
+    });
+    pool.forEach(j => {
+      expect(prevJobs).not.toContain(j.name);
+    });
+  });
+});
+
 // ── getPreviousJobs - 部分的なキャラのみを含む履歴エントリ ────────
 
 describe('getPreviousJobs - 部分的なキャラのみを含む履歴エントリ', () => {
