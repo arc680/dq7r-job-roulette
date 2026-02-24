@@ -257,6 +257,40 @@ body {
   margin-bottom: 28px;
 }
 
+.timing-preset-wrapper {
+  margin-bottom: 8px;
+}
+
+.timing-preset-select {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-family: var(--font-main);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-blue);
+  border-radius: var(--radius-md);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a0a8cc' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+.timing-preset-select:focus {
+  border-color: var(--border-gold);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.1);
+}
+
+.timing-preset-select option,
+.timing-preset-select optgroup {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
 .timing-input-wrapper {
   position: relative;
 }

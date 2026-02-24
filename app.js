@@ -68,6 +68,17 @@ function initOptions() {
     if (file) importHistory(file);
     e.target.value = '';
   });
+
+  const bossPresetSelect = document.getElementById('bossPresetSelect');
+  if (bossPresetSelect) {
+    bossPresetSelect.addEventListener('change', () => {
+      const value = bossPresetSelect.value;
+      if (value) {
+        document.getElementById('timingInput').value = value;
+        bossPresetSelect.value = '';
+      }
+    });
+  }
 }
 
 function isExcludePrevEnabled() {

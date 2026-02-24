@@ -75,6 +75,70 @@
     <!-- Timing Input -->
     <section class="timing-section">
       <h2 class="section-title">転職タイミング</h2>
+      <div class="timing-preset-wrapper">
+        <select class="timing-preset-select" id="bossPresetSelect">
+          <option value="">ボス撃破プリセットから選択…</option>
+          <optgroup label="【過去】">
+            <option value="ゴーレム撃破">ゴーレム (Lv.4 / 東の塔)</option>
+            <option value="チョッキンガー撃破">チョッキンガー (Lv.5 / 東の塔)</option>
+            <option value="マチルダ撃破">マチルダ (Lv.5 / 東の塔)</option>
+            <option value="炎の巨人撃破">炎の巨人 (Lv.8 / 炎の山)</option>
+            <option value="デス・アミーゴ撃破">デス・アミーゴ (Lv.11 / 魔封じの洞くつ)</option>
+            <option value="マシンマスター撃破">マシンマスター (Lv.13 / からくり兵団拠点)</option>
+            <option value="デスマシーン撃破">デスマシーン (Lv.13 / からくり兵団拠点)</option>
+            <option value="ジャン撃破">ジャン (Lv.15 / 神の祭だんの湖)</option>
+            <option value="イノップ＆ゴンズ撃破">イノップ＆ゴンズ (Lv.16 / ろう獄へ続く洞くつ)</option>
+            <option value="ネペロ撃破">ネペロ (Lv.18 / 神殿への地下道・コロシアム)</option>
+            <option value="ガルシア撃破">ガルシア (Lv.18 / 神殿への地下道・コロシアム)</option>
+            <option value="トンプソン撃破">トンプソン (Lv.18 / 神殿への地下道・コロシアム)</option>
+            <option value="ネリス撃破">ネリス (Lv.18 / 神殿への地下道・コロシアム)</option>
+            <option value="アントリア撃破">アントリア (Lv.19 / ダーマ神殿)</option>
+            <option value="ボーンライダー撃破">ボーンライダー (Lv.20 / 砂漠の城)</option>
+            <option value="セト撃破">セト (Lv.20 / 魔王像)</option>
+            <option value="海底のゴースト撃破">海底のゴースト (Lv.22 / 海底都市)</option>
+            <option value="グラコス撃破">グラコス (Lv.22 / 海底都市)</option>
+            <option value="あめふらし撃破">あめふらし (Lv.23 / グリンフレーク)</option>
+            <option value="メディルの使い撃破">メディルの使い (Lv.26 / マーディラス城)</option>
+            <option value="ゼッペル撃破">ゼッペル (Lv.26 / マーディラス城)</option>
+            <option value="アローインプ撃破">アローインプ (Lv.28 / レブレサック南の森)</option>
+            <option value="ボトク撃破">ボトク (Lv.28 / 魔物の岩山)</option>
+            <option value="やみのまじん撃破">やみのまじん (Lv.28 / 黒雲の迷路)</option>
+            <option value="ヘルクラウダー撃破">ヘルクラウダー (Lv.29 / リファ族の神殿)</option>
+            <option value="ガマデウス撃破">ガマデウス (Lv.30 / ドワーフ族の洞くつ)</option>
+            <option value="バリクナジャ撃破">バリクナジャ (Lv.31 / 大灯台)</option>
+            <option value="オルゴ・デミーラ撃破">オルゴ・デミーラ (Lv.33 / 魔空間の神殿)</option>
+            <option value="ダークジャミラ＆ヘルバトラー撃破">ダークジャミラ＆ヘルバトラー (Lv.39 / 野ざらしの地)</option>
+            <option value="アイロス部隊撃破">アイロス部隊 (Lv.39 / 野ざらしの地)</option>
+            <option value="ボルンガ撃破">ボルンガ (Lv.40 / ルーメン)</option>
+            <option value="ヘルバオム撃破">ヘルバオム (Lv.40 / ルーメン)</option>
+            <option value="チビィ撃破">チビィ (Lv.40 / ルーメン)</option>
+          </optgroup>
+          <optgroup label="【現代】">
+            <option value="影の石版守り撃破">影の石版守り (Lv.1 / グランエスタード地下道)</option>
+            <option value="さんぞく軍団撃破">さんぞく軍団 (Lv.19 / ダーマ南の廃墟)</option>
+            <option value="さんぞくのカシラ撃破">さんぞくのカシラ (Lv.19 / 山賊のアジト)</option>
+            <option value="グラコス5世撃破">グラコス5世 (Lv.22 / 海底都市)</option>
+            <option value="スカイドラゴン撃破">スカイドラゴン (Lv.23 / 山奥の塔)</option>
+            <option value="ボンドゥル撃破">ボンドゥル (Lv.33 / 大灯台)</option>
+            <option value="炎の精霊撃破">炎の精霊 (Lv.34 / 炎の山)</option>
+            <option value="砂漠の城の3体のモンスター撃破">砂漠の城の3体のモンスター (Lv.34 / 砂漠の城)</option>
+            <option value="ヘルビースト撃破">ヘルビースト (Lv.36 / リファ族の神殿)</option>
+            <option value="ネンガル撃破">ネンガル (Lv.38 / 風の迷宮)</option>
+            <option value="オルゴ・デミーラ撃破">オルゴ・デミーラ・ラスボス (Lv.50 / ダークパレス)</option>
+            <option value="かみさま撃破">かみさま (Lv.55 / 謎の異世界)</option>
+            <option value="シーバーン撃破">シーバーン (Lv.55 / さらなる異世界)</option>
+            <option value="ダースドラゴン撃破">ダースドラゴン (Lv.55 / さらなる異世界)</option>
+            <option value="マントゴーア撃破">マントゴーア (Lv.55 / さらなる異世界)</option>
+            <option value="アトラス撃破">アトラス (Lv.55 / さらなる異世界)</option>
+            <option value="四精霊撃破">四精霊 (Lv.68 / さらなる異世界)</option>
+            <option value="神竜撃破">神竜 (Lv.70 / さらなる異世界)</option>
+            <option value="かみさまと四精霊撃破">かみさまと四精霊 (Lv.75 / さらなる異世界)</option>
+          </optgroup>
+          <optgroup label="【現在】">
+            <option value="ユバールの守り手たち撃破">ユバールの守り手たち (Lv.20 / 海の見える丘)</option>
+          </optgroup>
+        </select>
+      </div>
       <div class="timing-input-wrapper">
         <input type="text" class="timing-input" id="timingInput" placeholder="例：ダーマ神殿到着後、グリンフレーク攻略後…">
       </div>
