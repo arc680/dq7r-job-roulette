@@ -259,6 +259,33 @@ body {
 
 .timing-input-wrapper {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.boss-preset-select {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-family: var(--font-main);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-blue);
+  border-radius: var(--radius-md);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.boss-preset-select:focus {
+  border-color: var(--border-gold);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.1);
+}
+
+.boss-preset-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .timing-input {
