@@ -26,32 +26,15 @@
       <div class="header-ornament bottom"></div>
     </header>
 
-    <!-- Phase Selector -->
-    <section class="phase-section">
-      <h2 class="section-title">ストーリーフェーズ</h2>
-      <div class="phase-tabs" id="phaseTabs">
-        <button class="phase-tab active" data-phase="1">
-          <span class="phase-number">I</span>
-          <span class="phase-label">転職解放</span>
-          <span class="phase-detail">3人 / 掛け持ちなし</span>
-        </button>
-        <button class="phase-tab" data-phase="2">
-          <span class="phase-number">II</span>
-          <span class="phase-label">アイラ加入</span>
-          <span class="phase-detail">4人 / 掛け持ちあり</span>
-        </button>
-        <button class="phase-tab" data-phase="3">
-          <span class="phase-number">III</span>
-          <span class="phase-label">メルビン加入</span>
-          <span class="phase-detail">5人 / 掛け持ちあり</span>
-        </button>
-      </div>
-    </section>
-
     <!-- Exclusion Options -->
     <section class="options-section">
       <h2 class="section-title">オプション</h2>
       <div class="options-list">
+        <label class="option-toggle" id="optDualJob">
+          <input type="checkbox" id="dualJobCheck" checked>
+          <span class="toggle-switch"></span>
+          <span class="option-label">掛け持ちあり（メイン＋サブ）</span>
+        </label>
         <label class="option-toggle" id="optExcludePrev">
           <input type="checkbox" id="excludePrevCheck" checked>
           <span class="toggle-switch"></span>
