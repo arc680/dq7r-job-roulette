@@ -3,13 +3,12 @@
    ============================================ */
 
 import {
-  CHARACTERS, JOBS, PHASES, CATEGORY_LABELS,
-  getCharactersForPhase, computeMasteredJobs, toggleMasteredInHistory,
+  CHARACTERS, CATEGORY_LABELS,
+  computeMasteredJobs, toggleMasteredInHistory,
   getPreviousJobs, getAvailableJobs, pickRandomJob, formatTime,
 } from './logic.js';
 
 const STORAGE_KEY = 'dq7r-job-history';
-const PHASE_STORAGE_KEY = 'dq7r-current-phase';
 
 // ── Boss Presets ───────────────────────────────
 
@@ -71,7 +70,6 @@ const BOSS_PRESETS = [
 
 // ── State ─────────────────────────────────────
 
-let currentPhase = 1;
 let isRolling = false;
 let pendingAssignments = new Map(); // characterName → assignment object
 
@@ -80,37 +78,10 @@ let pendingAssignments = new Map(); // characterName → assignment object
 document.addEventListener('DOMContentLoaded', () => {
   localStorage.removeItem('dq7r-mastered-jobs');
 
-  // Restore saved phase
-  const savedPhase = parseInt(localStorage.getItem(PHASE_STORAGE_KEY));
-  if (savedPhase && [1, 2, 3].includes(savedPhase)) {
-    currentPhase = savedPhase;
-    document.querySelectorAll('.phase-tab').forEach(tab => {
-      tab.classList.toggle('active', parseInt(tab.dataset.phase) === savedPhase);
-    });
-  }
-
-  initPhaseTabs();
   initOptions();
   renderCharacters();
   renderHistory();
 });
-
-// ── Phase Tabs ────────────────────────────────
-
-function initPhaseTabs() {
-  const tabs = document.querySelectorAll('.phase-tab');
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      if (isRolling) return;
-      pendingAssignments.clear();
-      currentPhase = parseInt(tab.dataset.phase);
-      localStorage.setItem(PHASE_STORAGE_KEY, currentPhase);
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      renderCharacters();
-    });
-  });
-}
 
 // ── Options ───────────────────────────────────
 
@@ -125,6 +96,11 @@ function initOptions() {
     const file = e.target.files[0];
     if (file) importHistory(file);
     e.target.value = '';
+  });
+
+  document.getElementById('dualJobCheck').addEventListener('change', () => {
+    pendingAssignments.clear();
+    renderCharacters();
   });
 
   const bossSelect = document.getElementById('bossPresetSelect');
@@ -142,6 +118,10 @@ function initOptions() {
   });
 }
 
+function isDualJobEnabled() {
+  return document.getElementById('dualJobCheck').checked;
+}
+
 function isExcludePrevEnabled() {
   return document.getElementById('excludePrevCheck').checked;
 }
@@ -154,10 +134,9 @@ function isExcludeMasteredEnabled() {
 
 function renderCharacters() {
   const grid = document.getElementById('charactersGrid');
-  const chars = getCharactersForPhase(currentPhase);
-  const isDual = PHASES[currentPhase].dualJob;
+  const isDual = isDualJobEnabled();
 
-  grid.innerHTML = chars.map(char => `
+  grid.innerHTML = CHARACTERS.map(char => `
     <div class="character-card" data-character="${char.name}">
       <div class="card-header">
         <div class="card-avatar">${char.emoji}</div>
@@ -185,9 +164,8 @@ function renderCharacters() {
 // ── Character Spin Buttons ────────────────────
 
 function initCharSpinButtons() {
-  const chars = getCharactersForPhase(currentPhase);
   document.querySelectorAll('.char-spin-btn').forEach(btn => {
-    const char = chars.find(c => c.name === btn.dataset.character);
+    const char = CHARACTERS.find(c => c.name === btn.dataset.character);
     if (char) btn.addEventListener('click', () => startCharacterRoulette(char));
   });
 }
@@ -197,7 +175,7 @@ function initCharSpinButtons() {
 async function startCharacterRoulette(char) {
   if (isRolling) return;
 
-  const isDual = PHASES[currentPhase].dualJob;
+  const isDual = isDualJobEnabled();
   const history = loadHistory();
   const masteredJobs = computeMasteredJobs(history);
   const excludePrev = isExcludePrevEnabled();
@@ -242,8 +220,6 @@ function confirmSession() {
   const timing = document.getElementById('timingInput').value.trim();
   saveHistory({
     timestamp: Date.now(),
-    phase: currentPhase,
-    phaseLabel: PHASES[currentPhase].label,
     timing: timing || '',
     assignments,
   });
@@ -373,7 +349,6 @@ function exportHistory() {
   const data = {
     version: 1,
     exportedAt: new Date().toISOString(),
-    currentPhase,
     history,
   };
 
@@ -392,13 +367,8 @@ function importHistory(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
     let imported;
-    let importedPhase = null;
     try {
       const parsed = JSON.parse(e.target.result);
-      const rawPhase = parsed?.currentPhase;
-      if (typeof rawPhase === 'number' && [1, 2, 3].includes(rawPhase)) {
-        importedPhase = rawPhase;
-      }
       imported = validateImportData(parsed);
     } catch {
       showImportMessage('JSONの読み込みに失敗しました。', 'error');
@@ -412,9 +382,9 @@ function importHistory(file) {
 
     const existing = loadHistory();
     if (existing.length > 0) {
-      showImportMergeDialog(existing, imported, importedPhase);
+      showImportMergeDialog(existing, imported);
     } else {
-      applyImport('replace', [], imported, importedPhase);
+      applyImport('replace', [], imported);
     }
   };
   reader.readAsText(file);
@@ -425,12 +395,11 @@ function validateImportData(parsed) {
   if (!Array.isArray(arr)) return [];
   return arr.filter(entry =>
     typeof entry.timestamp === 'number' &&
-    typeof entry.phase === 'number' &&
     Array.isArray(entry.assignments)
   );
 }
 
-function applyImport(mode, existing, imported, importedPhase = null) {
+function applyImport(mode, existing, imported) {
   let merged;
   if (mode === 'merge') {
     const map = new Map();
@@ -442,21 +411,11 @@ function applyImport(mode, existing, imported, importedPhase = null) {
   if (merged.length > 50) merged.length = 50;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
 
-  if (importedPhase !== null) {
-    currentPhase = importedPhase;
-    localStorage.setItem(PHASE_STORAGE_KEY, importedPhase);
-    document.querySelectorAll('.phase-tab').forEach(tab => {
-      tab.classList.toggle('active', parseInt(tab.dataset.phase) === importedPhase);
-    });
-    pendingAssignments.clear();
-    renderCharacters();
-  }
-
   renderHistory();
   showImportMessage(`${imported.length}件の履歴をインポートしました。`, 'success');
 }
 
-function showImportMergeDialog(existing, imported, importedPhase = null) {
+function showImportMergeDialog(existing, imported) {
   const overlay = document.createElement('div');
   overlay.className = 'confirm-overlay';
   overlay.innerHTML = `
@@ -471,11 +430,11 @@ function showImportMergeDialog(existing, imported, importedPhase = null) {
   `;
 
   overlay.querySelector('.confirm-merge').addEventListener('click', () => {
-    applyImport('merge', existing, imported, importedPhase);
+    applyImport('merge', existing, imported);
     overlay.remove();
   });
   overlay.querySelector('.confirm-replace').addEventListener('click', () => {
-    applyImport('replace', existing, imported, importedPhase);
+    applyImport('replace', existing, imported);
     overlay.remove();
   });
   overlay.querySelector('.confirm-no').addEventListener('click', () => overlay.remove());
@@ -545,7 +504,6 @@ function renderHistory() {
         <div class="history-item-header">
           <div class="history-meta">
             <span class="history-time">${time}</span>
-            <span class="history-phase">${entry.phaseLabel || 'Phase ' + entry.phase}</span>
             ${timingHtml}
           </div>
           <button class="history-delete-btn" data-index="${historyIndex}" title="削除">✕</button>
