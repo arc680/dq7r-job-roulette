@@ -11,6 +11,64 @@ import {
 const STORAGE_KEY = 'dq7r-job-history';
 const PHASE_STORAGE_KEY = 'dq7r-current-phase';
 
+// ── Boss Presets ───────────────────────────────
+
+const BOSS_PRESETS = [
+  '影の石版守り',
+  'ゴーレム',
+  'チョッキンガー',
+  'マチルダ',
+  '炎の巨人',
+  'デス・アミーゴ',
+  'マシンマスター',
+  'デスマシーン',
+  'ジャン',
+  'イノップ＆ゴンズ',
+  'ネペロ',
+  'ガルシア',
+  'トンプソン',
+  'ネリス',
+  'アントリア',
+  'さんぞく軍団',
+  'さんぞくのカシラ',
+  'ボーンライダー',
+  'セト',
+  'ユバールの守り手たち',
+  '海底のゴースト',
+  'グラコス',
+  'グラコス5世',
+  'スカイドラゴン',
+  'あめふらし',
+  'メディルの使い',
+  'ゼッペル',
+  'アローインプ',
+  'ボトク',
+  'やみのまじん',
+  'ヘルクラウダー',
+  'ガマデウス',
+  'バリクナジャ',
+  'オルゴ・デミーラ',
+  'ボンドゥル',
+  '炎の精霊',
+  '砂漠の城の3体のモンスター',
+  'ヘルビースト',
+  'ネンガル',
+  'ダークジャミラ＆ヘルバトラー',
+  'アイロス部隊',
+  'ボルンガ',
+  'ヘルバオム',
+  'チビィ',
+  'オルゴ・デミーラ(ラスボス)',
+  'かみさま',
+  'シーバーン',
+  'ダースドラゴン',
+  'マントゴーア',
+  'アトラス',
+  '四精霊',
+  '神竜',
+  'かみさまと四精霊',
+];
+
 // ── State ─────────────────────────────────────
 
 let currentPhase = 1;
@@ -67,6 +125,20 @@ function initOptions() {
     const file = e.target.files[0];
     if (file) importHistory(file);
     e.target.value = '';
+  });
+
+  const bossSelect = document.getElementById('bossPresetSelect');
+  BOSS_PRESETS.forEach(boss => {
+    const option = document.createElement('option');
+    option.value = boss;
+    option.textContent = boss;
+    bossSelect.appendChild(option);
+  });
+  bossSelect.addEventListener('change', () => {
+    if (bossSelect.value) {
+      document.getElementById('timingInput').value = `${bossSelect.value}撃破`;
+      bossSelect.value = '';
+    }
   });
 }
 
