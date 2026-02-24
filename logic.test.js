@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  CHARACTERS, JOBS, PHASES, JOB_PREREQUISITES,
-  getCharactersForPhase,
+  CHARACTERS, JOBS, JOB_PREREQUISITES,
   computeMasteredJobs,
   toggleMasteredInHistory,
   getPreviousJobs,
@@ -12,25 +11,17 @@ import {
   formatTime,
 } from './logic.js';
 
-// ── getCharactersForPhase ─────────────────────
+// ── CHARACTERS ────────────────────────────────
 
-describe('getCharactersForPhase', () => {
-  it('Phase 1: 3人（主人公, マリベル, ガボ）', () => {
-    const chars = getCharactersForPhase(1);
-    expect(chars).toHaveLength(3);
-    expect(chars.map(c => c.name)).toEqual(['主人公', 'マリベル', 'ガボ']);
-  });
-
-  it('Phase 2: 4人（+アイラ）', () => {
-    const chars = getCharactersForPhase(2);
-    expect(chars).toHaveLength(4);
-    expect(chars.map(c => c.name)).toContain('アイラ');
-  });
-
-  it('Phase 3: 5人（+メルビン）', () => {
-    const chars = getCharactersForPhase(3);
-    expect(chars).toHaveLength(5);
-    expect(chars.map(c => c.name)).toContain('メルビン');
+describe('CHARACTERS', () => {
+  it('5人全員が定義されている', () => {
+    expect(CHARACTERS).toHaveLength(5);
+    const names = CHARACTERS.map(c => c.name);
+    expect(names).toContain('主人公');
+    expect(names).toContain('マリベル');
+    expect(names).toContain('ガボ');
+    expect(names).toContain('アイラ');
+    expect(names).toContain('メルビン');
   });
 });
 
@@ -409,13 +400,6 @@ describe('データ整合性', () => {
   it('全キャラに固有職がある', () => {
     CHARACTERS.forEach(c => {
       expect(c.uniqueJob).toBeTruthy();
-    });
-  });
-
-  it('全フェーズが定義されている', () => {
-    [1, 2, 3].forEach(p => {
-      expect(PHASES[p]).toBeDefined();
-      expect(PHASES[p].label).toBeTruthy();
     });
   });
 });

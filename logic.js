@@ -5,11 +5,11 @@
 // ── Data ──────────────────────────────────────
 
 export const CHARACTERS = [
-  { name: '主人公', emoji: '⚓', uniqueJob: 'ひよっこ漁師', phases: [1, 2, 3] },
-  { name: 'マリベル', emoji: '🎀', uniqueJob: 'ひよっこ網元', phases: [1, 2, 3] },
-  { name: 'ガボ', emoji: '🐺', uniqueJob: 'オオカミ少年', phases: [1, 2, 3] },
-  { name: 'アイラ', emoji: '💃', uniqueJob: 'ユバールの踊り手', phases: [2, 3] },
-  { name: 'メルビン', emoji: '🛡️', uniqueJob: '神の兵士', phases: [3] },
+  { name: '主人公', emoji: '⚓', uniqueJob: 'ひよっこ漁師' },
+  { name: 'マリベル', emoji: '🎀', uniqueJob: 'ひよっこ網元' },
+  { name: 'ガボ', emoji: '🐺', uniqueJob: 'オオカミ少年' },
+  { name: 'アイラ', emoji: '💃', uniqueJob: 'ユバールの踊り手' },
+  { name: 'メルビン', emoji: '🛡️', uniqueJob: '神の兵士' },
 ];
 
 export const JOBS = {
@@ -38,27 +38,12 @@ export const JOB_PREREQUISITES = {
   '勇者': { type: 'advancedCount', count: 3 },
 };
 
-export const PHASES = {
-  1: { label: '転職解放', dualJob: false },
-  2: { label: 'アイラ加入', dualJob: true },
-  3: { label: 'メルビン加入', dualJob: true },
-};
-
 export const CATEGORY_LABELS = {
   unique: '固有職',
   basic: '基本職',
   advanced: '上級職',
   master: 'マスター職',
 };
-
-// ── Characters ────────────────────────────────
-
-/**
- * 指定フェーズに参加するキャラクター一覧を返す
- */
-export function getCharactersForPhase(phase) {
-  return CHARACTERS.filter(c => c.phases.includes(phase));
-}
 
 // ── Mastered Jobs ─────────────────────────────
 
