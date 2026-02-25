@@ -795,8 +795,14 @@ body {
   margin-bottom: 0;
 }
 
-.mastery-section.collapsed .mastery-grid {
+.mastery-section.collapsed .mastery-body {
   display: none;
+}
+
+.mastery-reset-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
 }
 
 .mastery-toggle-btn {
