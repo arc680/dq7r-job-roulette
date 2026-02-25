@@ -98,6 +98,12 @@ function initOptions() {
   document.getElementById('rouletteBtn').addEventListener('click', confirmSession);
   document.getElementById('clearHistoryBtn').addEventListener('click', confirmClearHistory);
   document.getElementById('resetMasteryBtn').addEventListener('click', confirmResetMastery);
+  document.getElementById('masteryToggleBtn').addEventListener('click', () => {
+    const section = document.querySelector('.mastery-section');
+    const btn = document.getElementById('masteryToggleBtn');
+    const collapsed = section.classList.toggle('collapsed');
+    btn.setAttribute('aria-expanded', String(!collapsed));
+  });
   document.getElementById('exportHistoryBtn').addEventListener('click', exportHistory);
   document.getElementById('importHistoryBtn').addEventListener('click', () => {
     document.getElementById('importFileInput').click();

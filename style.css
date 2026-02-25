@@ -791,6 +791,39 @@ body {
   margin-bottom: 16px;
 }
 
+.mastery-section.collapsed .mastery-header {
+  margin-bottom: 0;
+}
+
+.mastery-section.collapsed .mastery-grid {
+  display: none;
+}
+
+.mastery-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: inherit;
+}
+
+.mastery-toggle-btn .section-title {
+  margin: 0;
+}
+
+.mastery-chevron {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.mastery-section.collapsed .mastery-chevron {
+  transform: rotate(180deg);
+}
+
 .mastery-grid {
   display: flex;
   flex-direction: column;
