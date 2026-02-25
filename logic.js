@@ -106,6 +106,30 @@ export function toggleMasteredInHistory(history, historyIndex, characterName, jo
   return updated;
 }
 
+/**
+ * マスター済みジョブのトグル（純粋関数）
+ * @param {Object} masteredJobs - { キャラ名: [職業名, ...] }
+ * @param {string} characterName
+ * @param {string} jobName
+ * @returns {Object} 更新後の masteredJobs
+ */
+export function toggleJobMastery(masteredJobs, characterName, jobName) {
+  const updated = { ...masteredJobs };
+  const charJobs = updated[characterName] ? [...updated[characterName]] : [];
+  const idx = charJobs.indexOf(jobName);
+  if (idx >= 0) {
+    charJobs.splice(idx, 1);
+  } else {
+    charJobs.push(jobName);
+  }
+  if (charJobs.length === 0) {
+    delete updated[characterName];
+  } else {
+    updated[characterName] = charJobs;
+  }
+  return updated;
+}
+
 // ── Previous Jobs ─────────────────────────────
 
 /**
