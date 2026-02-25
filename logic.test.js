@@ -3,6 +3,7 @@ import {
   CHARACTERS, JOBS, JOB_PREREQUISITES,
   computeMasteredJobs,
   toggleMasteredInHistory,
+  toggleJobMastery,
   getPreviousJobs,
   checkPrerequisites,
   getAvailableJobs,
@@ -516,5 +517,40 @@ describe('getPreviousJobs - 部分的なキャラのみを含む履歴エント�
       { assignments: [{ character: '主人公', jobs: [{ name: '戦士', category: 'basic', mastered: false }] }] },
     ];
     expect(getPreviousJobs('主人公', history)).toEqual(['僧侶']);
+  });
+});
+
+// ── toggleJobMastery ───────────────────────────
+
+describe('toggleJobMastery', () => {
+  it('未マスターの職 → マスター済みに追加される', () => {
+    const result = toggleJobMastery({}, '主人公', '戦士');
+    expect(result).toEqual({ '主人公': ['戦士'] });
+  });
+
+  it('マスター済みの職 → 削除される（トグル）', () => {
+    const mastered = { '主人公': ['戦士', '武闘家'] };
+    const result = toggleJobMastery(mastered, '主人公', '戦士');
+    expect(result).toEqual({ '主人公': ['武闘家'] });
+  });
+
+  it('最後の職を削除するとキャラのキーも消える', () => {
+    const mastered = { '主人公': ['戦士'] };
+    const result = toggleJobMastery(mastered, '主人公', '戦士');
+    expect(result).toEqual({});
+    expect('主人公' in result).toBe(false);
+  });
+
+  it('不変性：元のオブジェクトを変更しない', () => {
+    const mastered = { '主人公': ['戦士'] };
+    toggleJobMastery(mastered, '主人公', '武闘家');
+    expect(mastered).toEqual({ '主人公': ['戦士'] });
+  });
+
+  it('複数キャラが独立して管理される', () => {
+    const mastered = { '主人公': ['戦士'], 'マリベル': ['僧侶'] };
+    const result = toggleJobMastery(mastered, '主人公', '武闘家');
+    expect(result['主人公']).toEqual(['戦士', '武闘家']);
+    expect(result['マリベル']).toEqual(['僧侶']);
   });
 });

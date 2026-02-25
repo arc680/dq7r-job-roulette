@@ -3,12 +3,14 @@
    ============================================ */
 
 import {
-  CHARACTERS, CATEGORY_LABELS,
-  computeMasteredJobs, toggleMasteredInHistory,
+  CHARACTERS, JOBS, CATEGORY_LABELS,
+  computeMasteredJobs,
+  toggleJobMastery, checkPrerequisites,
   getPreviousJobs, getAvailableJobs, pickRandomJob, formatTime,
 } from './logic.js';
 
 const STORAGE_KEY = 'dq7r-job-history';
+const MASTERY_KEY = 'dq7r-mastered';
 
 // ── Boss Presets ───────────────────────────────
 
@@ -78,9 +80,16 @@ let pendingAssignments = new Map(); // characterName → assignment object
 document.addEventListener('DOMContentLoaded', () => {
   localStorage.removeItem('dq7r-mastered-jobs');
 
+  // 旧履歴ベースのマスターデータを新ストレージに移行（初回のみ）
+  if (!localStorage.getItem(MASTERY_KEY)) {
+    const migrated = computeMasteredJobs(loadHistory());
+    saveMastery(migrated);
+  }
+
   initOptions();
   renderCharacters();
   renderHistory();
+  renderMasteryPanel();
 });
 
 // ── Options ───────────────────────────────────
@@ -88,6 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
 function initOptions() {
   document.getElementById('rouletteBtn').addEventListener('click', confirmSession);
   document.getElementById('clearHistoryBtn').addEventListener('click', confirmClearHistory);
+  document.getElementById('resetMasteryBtn').addEventListener('click', confirmResetMastery);
+  document.getElementById('masteryToggleBtn').addEventListener('click', () => {
+    const section = document.querySelector('.mastery-section');
+    const btn = document.getElementById('masteryToggleBtn');
+    const collapsed = section.classList.toggle('collapsed');
+    btn.setAttribute('aria-expanded', String(!collapsed));
+  });
   document.getElementById('exportHistoryBtn').addEventListener('click', exportHistory);
   document.getElementById('importHistoryBtn').addEventListener('click', () => {
     document.getElementById('importFileInput').click();
@@ -177,7 +193,7 @@ async function startCharacterRoulette(char) {
 
   const isDual = isDualJobEnabled();
   const history = loadHistory();
-  const masteredJobs = computeMasteredJobs(history);
+  const masteredJobs = loadMastery();
   const excludePrev = isExcludePrevEnabled();
   const excludeMastered = isExcludeMasteredEnabled();
   const prevJobs = excludePrev ? getPreviousJobs(char.name, history) : [];
@@ -301,13 +317,52 @@ function clearHistory() {
   renderHistory();
 }
 
-function handleToggleMastered(historyIndex, characterName, jobName) {
-  const history = loadHistory();
-  const updated = toggleMasteredInHistory(history, historyIndex, characterName, jobName);
-  if (updated) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    renderHistory();
+// ── Mastery Storage ───────────────────────────
+
+function loadMastery() {
+  try {
+    const data = localStorage.getItem(MASTERY_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
   }
+}
+
+function saveMastery(masteredJobs) {
+  localStorage.setItem(MASTERY_KEY, JSON.stringify(masteredJobs));
+}
+
+function handleToggleMasterJob(characterName, jobName) {
+  const updated = toggleJobMastery(loadMastery(), characterName, jobName);
+  saveMastery(updated);
+  renderMasteryPanel();
+}
+
+function confirmResetMastery() {
+  const mastered = loadMastery();
+  if (Object.keys(mastered).length === 0) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-dialog">
+      <p>マスター状況を全てリセットしますか？</p>
+      <div class="confirm-actions">
+        <button class="confirm-yes">リセット</button>
+        <button class="confirm-no">キャンセル</button>
+      </div>
+    </div>
+  `;
+
+  overlay.querySelector('.confirm-yes').addEventListener('click', () => {
+    saveMastery({});
+    renderMasteryPanel();
+    overlay.remove();
+  });
+  overlay.querySelector('.confirm-no').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  document.body.appendChild(overlay);
 }
 
 function confirmClearHistory() {
@@ -318,7 +373,7 @@ function confirmClearHistory() {
   overlay.className = 'confirm-overlay';
   overlay.innerHTML = `
     <div class="confirm-dialog">
-      <p>履歴とマスター状況を全て削除しますか？</p>
+      <p>履歴を全て削除しますか？</p>
       <div class="confirm-actions">
         <button class="confirm-yes">削除</button>
         <button class="confirm-no">キャンセル</button>
@@ -471,16 +526,8 @@ function renderHistory() {
     const assignmentsHtml = entry.assignments.map(a => {
       const jobsHtml = a.jobs.map(j => {
         const jobName = typeof j === 'string' ? j : j.name;
-        const mastered = typeof j === 'object' && j.mastered === true;
         return `
-          <div class="history-job-item ${mastered ? 'mastered' : ''}">
-            <label class="master-toggle" title="マスター済みにする">
-              <input type="checkbox" ${mastered ? 'checked' : ''}
-                data-history-index="${historyIndex}"
-                data-character="${a.character}"
-                data-job="${jobName}">
-              <span class="master-check">${mastered ? '★' : '☆'}</span>
-            </label>
+          <div class="history-job-item">
             <span class="history-job-name">${jobName}</span>
           </div>
         `;
@@ -520,14 +567,63 @@ function renderHistory() {
       deleteHistoryItem(parseInt(btn.dataset.index));
     });
   });
+}
 
-  list.querySelectorAll('.master-toggle input').forEach(cb => {
-    cb.addEventListener('change', () => {
-      handleToggleMastered(
-        parseInt(cb.dataset.historyIndex),
-        cb.dataset.character,
-        cb.dataset.job
-      );
+// ── Mastery Panel Rendering ───────────────────
+
+function renderMasteryPanel() {
+  const grid = document.getElementById('masteryGrid');
+  if (!grid) return;
+
+  const masteredJobs = loadMastery();
+
+  grid.innerHTML = CHARACTERS.map(char => {
+    const charMastered = masteredJobs[char.name] || [];
+
+    const categoryBlocks = [
+      { label: '固有職', jobs: [{ name: char.uniqueJob, category: 'unique' }] },
+      { label: '基本職', jobs: JOBS.basic.map(j => ({ name: j, category: 'basic' })) },
+      { label: '上級職', jobs: JOBS.advanced.map(j => ({ name: j, category: 'advanced' })) },
+      { label: 'マスター職', jobs: JOBS.master.map(j => ({ name: j, category: 'master' })) },
+    ];
+
+    const categoriesHtml = categoryBlocks.map(({ label, jobs }) => {
+      const jobsHtml = jobs.map(({ name, category }) => {
+        const isMastered = charMastered.includes(name);
+        const isLocked = (category === 'advanced' || category === 'master')
+          && !checkPrerequisites(char.name, name, masteredJobs);
+        return `
+          <button class="mastery-job-toggle ${isMastered ? 'mastered' : ''}"
+            data-character="${char.name}" data-job="${name}"
+            ${isLocked ? 'disabled' : ''}>
+            <span class="mastery-star">${isMastered ? '★' : '☆'}</span>
+            <span class="mastery-job-name">${name}</span>
+          </button>
+        `;
+      }).join('');
+
+      return `
+        <div class="mastery-category-group">
+          <span class="mastery-category-label">${label}</span>
+          <div class="mastery-jobs-row">${jobsHtml}</div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="mastery-character-block">
+        <div class="mastery-char-header">
+          <span class="mastery-char-emoji">${char.emoji}</span>
+          <span class="mastery-char-name">${char.name}</span>
+        </div>
+        <div class="mastery-categories">${categoriesHtml}</div>
+      </div>
+    `;
+  }).join('');
+
+  grid.querySelectorAll('.mastery-job-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      handleToggleMasterJob(btn.dataset.character, btn.dataset.job);
     });
   });
 }
