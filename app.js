@@ -399,11 +399,20 @@ function confirmClearHistory() {
 
 function exportHistory() {
   const history = loadHistory();
-  if (history.length === 0) return;
+  const mastery = loadMastery();
+  const toggles = {
+    dualJob: document.getElementById('dualJobCheck').checked,
+    excludePrev: document.getElementById('excludePrevCheck').checked,
+    excludeMastered: document.getElementById('excludeMasteredCheck').checked,
+  };
+
+  if (history.length === 0 && Object.keys(mastery).length === 0) return;
 
   const data = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
+    toggles,
+    mastery,
     history,
   };
 
@@ -413,7 +422,7 @@ function exportHistory() {
   const date = new Date().toISOString().slice(0, 10);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `dq7r-history-${date}.json`;
+  a.download = `dq7r-data-${date}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -422,24 +431,35 @@ function importHistory(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
     let imported;
+    let importOptions = {};
+    let isV2 = false;
     try {
       const parsed = JSON.parse(e.target.result);
       imported = validateImportData(parsed);
+      if (parsed && !Array.isArray(parsed)) {
+        if (parsed.version === 2) isV2 = true;
+        if (parsed.mastery && typeof parsed.mastery === 'object') {
+          importOptions.mastery = parsed.mastery;
+        }
+        if (parsed.toggles && typeof parsed.toggles === 'object') {
+          importOptions.toggles = parsed.toggles;
+        }
+      }
     } catch {
       showImportMessage('JSONの読み込みに失敗しました。', 'error');
       return;
     }
 
-    if (imported.length === 0) {
-      showImportMessage('有効な履歴データが見つかりませんでした。', 'error');
+    if (!isV2 && imported.length === 0) {
+      showImportMessage('有効なデータが見つかりませんでした。', 'error');
       return;
     }
 
     const existing = loadHistory();
-    if (existing.length > 0) {
-      showImportMergeDialog(existing, imported);
+    if (existing.length > 0 && imported.length > 0) {
+      showImportMergeDialog(existing, imported, importOptions);
     } else {
-      applyImport('replace', [], imported);
+      applyImport('replace', [], imported, importOptions);
     }
   };
   reader.readAsText(file);
@@ -454,23 +474,48 @@ function validateImportData(parsed) {
   );
 }
 
-function applyImport(mode, existing, imported) {
-  let merged;
-  if (mode === 'merge') {
-    const map = new Map();
-    [...existing, ...imported].forEach(entry => map.set(entry.timestamp, entry));
-    merged = Array.from(map.values()).sort((a, b) => b.timestamp - a.timestamp);
-  } else {
-    merged = [...imported].sort((a, b) => b.timestamp - a.timestamp);
+function applyImport(mode, existing, imported, options = {}) {
+  if (imported.length > 0) {
+    let merged;
+    if (mode === 'merge') {
+      const map = new Map();
+      [...existing, ...imported].forEach(entry => map.set(entry.timestamp, entry));
+      merged = Array.from(map.values()).sort((a, b) => b.timestamp - a.timestamp);
+    } else {
+      merged = [...imported].sort((a, b) => b.timestamp - a.timestamp);
+    }
+    if (merged.length > 50) merged.length = 50;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    renderHistory();
   }
-  if (merged.length > 50) merged.length = 50;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
 
-  renderHistory();
-  showImportMessage(`${imported.length}件の履歴をインポートしました。`, 'success');
+  if (options.mastery) {
+    saveMastery(options.mastery);
+    renderMasteryPanel();
+  }
+
+  if (options.toggles) {
+    const { dualJob, excludePrev, excludeMastered } = options.toggles;
+    if (typeof dualJob === 'boolean') {
+      document.getElementById('dualJobCheck').checked = dualJob;
+    }
+    if (typeof excludePrev === 'boolean') {
+      document.getElementById('excludePrevCheck').checked = excludePrev;
+    }
+    if (typeof excludeMastered === 'boolean') {
+      document.getElementById('excludeMasteredCheck').checked = excludeMastered;
+    }
+    pendingAssignments.clear();
+    renderCharacters();
+  }
+
+  const message = imported.length > 0
+    ? `${imported.length}件の履歴をインポートしました。`
+    : 'データをインポートしました。';
+  showImportMessage(message, 'success');
 }
 
-function showImportMergeDialog(existing, imported) {
+function showImportMergeDialog(existing, imported, importOptions = {}) {
   const overlay = document.createElement('div');
   overlay.className = 'confirm-overlay';
   overlay.innerHTML = `
@@ -485,11 +530,11 @@ function showImportMergeDialog(existing, imported) {
   `;
 
   overlay.querySelector('.confirm-merge').addEventListener('click', () => {
-    applyImport('merge', existing, imported);
+    applyImport('merge', existing, imported, importOptions);
     overlay.remove();
   });
   overlay.querySelector('.confirm-replace').addEventListener('click', () => {
-    applyImport('replace', existing, imported);
+    applyImport('replace', existing, imported, importOptions);
     overlay.remove();
   });
   overlay.querySelector('.confirm-no').addEventListener('click', () => overlay.remove());
