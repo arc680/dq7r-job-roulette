@@ -5,8 +5,8 @@
   "description": "DQ7 リイマジンド 職業ルーレット",
   "scripts": {
     "dev": "npx -y serve .",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "npx vitest run",
+    "test:watch": "npx vitest"
   },
   "devDependencies": {
     "vitest": "^3.0.0"
